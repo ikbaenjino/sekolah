@@ -1,38 +1,27 @@
 FROM php:8.1
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    unzip curl git zip \
-    libzip-dev libpng-dev libjpeg-dev libfreetype6-dev \
+    unzip curl git zip libzip-dev \
+    libpng-dev libjpeg-dev libfreetype6-dev \
     libonig-dev libxml2-dev nodejs npm
 
-# Install Composer
+# Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
 WORKDIR /var/www
-
-# Copy project files
 COPY . .
 
-# ✅ FIX: Buat folder cache dan ubah permission & kepemilikan
-RUN mkdir -p bootstrap/cache \
-    && chown -R www-data:www-data bootstrap/cache \
-    && chmod -R 775 bootstrap/cache
+# ── FIX folder & permission ─────────────────────────────────────────
+RUN mkdir -p storage/framework/{cache/data,sessions,views} storage/logs bootstrap/cache \
+ && chown -R www-data:www-data storage bootstrap/cache \
+ && chmod -R 775 storage bootstrap/cache
 
-# Install dependencies & build assets
+# Install deps & build assets
 RUN composer install --no-dev --optimize-autoloader \
-    && npm install \
-    && npm run prod \
-    && composer dump-autoload \
-    && php artisan cache:clear \
-    && php artisan config:clear \
-    && php artisan view:clear \
-    && php artisan config:cache \
-    && php artisan migrate --force || true \
-    && php artisan storage:link || true
+ && npm install \
+ && npm run prod
 
+# (jangan config:cache di tahap build!)
 EXPOSE 8000
 
-CMD ["php", "-S", "0.0.0.0:8000", "-t", "public"]
-
+CMD ["sh","-c","php artisan config:clear && php artisan serve --host=0.0.0.0 --port=8000"]
