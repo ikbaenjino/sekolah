@@ -10,12 +10,13 @@ RUN npm install --unsafe-perm
 # Update browserslist database
 RUN npx browserslist@latest --update-db
 
-# Copy semua resources
-COPY resources resources/
+# Copy semua file yang diperlukan
+COPY resources/js/ resources/js/
+COPY resources/css/ resources/css/  # Untuk CSS biasa
 COPY webpack.mix.js ./
 
-# Verifikasi file ada sebelum build
-RUN ls -la resources/sass/ && \
+# Verifikasi struktur file
+RUN ls -la resources/ && \
     npm run prod
 
 # Stage 2: Aplikasi PHP
@@ -32,7 +33,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-# Copy aplikasi (gunakan .dockerignore untuk exclude file tidak perlu)
+# Copy aplikasi
 COPY . .
 
 # Copy hasil build assets dari stage pertama
