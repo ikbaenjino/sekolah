@@ -15,21 +15,21 @@ services:
     startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
     plan: free
     envVars:
-      - key: APP_ENV
-        value: production
-      - key: APP_KEY
-        generateValue: true
-        key: APP_DEBUG
-        value: false
-      - key: DB_CONNECTION
-        value: pgsql
-      - key: DB_HOST
-        value: db.mcj1ktbhxbbezykjlmnq.supabase.co
-      - key: DB_PORT
-        value: 5432
-      - key: DB_DATABASE
-        value: postgres
-      - key: DB_USERNAME
-        value: postgres
-      - key: DB_PASSWORD
-        value: keluar4bulan
+  - key: APP_ENV
+    value: production
+  - key: APP_KEY
+    generateValue: true
+  - key: APP_DEBUG
+    value: false
+  - key: DB_CONNECTION
+    value: pgsql
+  - key: DB_HOST
+    value: dpg-d133h9h5pdvs73da7t9g-a
+  - key: DB_PORT
+    value: 5432
+  - key: DB_DATABASE
+    value: laravel_app_3x13
+  - key: DB_USERNAME
+    value: laravel_app_3x13_user
+  - key: DB_PASSWORD
+    value: gmrKV1Kzb3eeKt1uZhu16KnigPG4Psji
