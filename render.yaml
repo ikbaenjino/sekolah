@@ -1,20 +1,11 @@
-type: 
 services:
   - type: web
     name: sekolah
-    env: php
+    runtime: docker
     plan: free
-    buildCommand: |
-      apt-get update && apt-get install -y curl gnupg
-      curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-      apt-get install -y nodejs
-      npm install
-      npm run prod
-      composer install --no-dev --optimize-autoloader
-      php artisan config:cache
-      php artisan migrate --force || true
-      php artisan storage:link || true
-    startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
+    repo: https://github.com/ikbaenjino/sekolah
+    branch: main
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: APP_ENV
         value: production
@@ -34,5 +25,6 @@ services:
         value: laravel_app_3x13_user
       - key: DB_PASSWORD
         value: gmrKV1Kzb3eeKt1uZhu16KnigPG4Psji
+
 
   
