@@ -42,8 +42,10 @@ COPY . .
 # Copy seluruh hasil build dari stage Node
 COPY --from=build /var/www/public /var/www/public
 
-# Install dependensi PHP (tanpa dev)
 RUN composer install --no-dev --optimize-autoloader
+
+# Opsional: jika kamu butuh asset
+RUN npm install && npm run prod || echo "no frontend build"
 
 # Permissions Laravel
 RUN chmod -R 775 storage bootstrap/cache
