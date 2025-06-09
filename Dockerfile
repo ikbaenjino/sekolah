@@ -24,6 +24,7 @@ RUN mkdir -p bootstrap/cache \
 RUN composer install --no-dev --optimize-autoloader \
     && npm install \
     && npm run prod \
+    && composer dump-autoload \
     && php artisan cache:clear \
     && php artisan config:clear \
     && php artisan view:clear \
