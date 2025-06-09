@@ -1,59 +1,58 @@
-# Stage 1: Build assets dengan Node.js
-FROM node:18 as build
+# ──────────────────────────────
+# 1.  STAGE : build assets
+# ──────────────────────────────
+FROM node:18 AS build
 
 WORKDIR /var/www
 
-# Copy seluruh project (termasuk konfigurasi dan source)
-COPY . .
+# Salin hanya berkas frontend terlebih dahulu (layer cache lebih efisien)
+COPY package.json package-lock.json* ./
+COPY webpack.mix.js vite.config.js* ./
 
-# Install dependencies node
+# ← jika project Anda TIDAK memakai Mix/Vite,
+#    hapus seluruh stage "build" sampai tanda === END BUILD ===
+
 RUN npm install --unsafe-perm
+RUN npm run prod   # atau npm run build / npm run production, sesuaikan
 
-# Update database browserslist
-RUN npx browserslist@latest --update-db
+# Salin source yang dibutuhkan Mix (JS/SASS)
+COPY resources ./resources
+# === END BUILD ===================================================
 
-# Build assets (ganti sesuai kebutuhan: prod, build, dll)
-RUN npm run prod
 
-# Pastikan folder public/css ada (hindari error COPY)
-RUN mkdir -p /var/www/public/css
+# ──────────────────────────────
+# 2.  STAGE : production image
+# ──────────────────────────────
+FROM php:8.1-cli AS app
 
-# Debug struktur build
-RUN echo "Hasil build:" && ls -la public
-
-# Stage 2: PHP-FPM
-FROM php:8.1-fpm
-
-# Install dependencies sistem
+# Dependensi sistem (Git, Zip, lib GD dkk)
 RUN apt-get update && apt-get install -y \
-    unzip curl git zip libzip-dev libonig-dev libxml2-dev \
-    libpng-dev libjpeg-dev libfreetype6-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd pdo_mysql mbstring zip exif pcntl
+        git unzip zip libzip-dev \
+        libpng-dev libjpeg-dev libfreetype6-dev \
+        libonig-dev libxml2-dev \
+    && docker-php-ext-install pdo_mysql zip gd
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
-
-# Copy aplikasi PHP ke container
 COPY . .
 
-# Copy seluruh hasil build dari stage Node
-COPY --from=build /var/www/public /var/www/public
+# ── FIX  : pastikan direktori cache & storage ada + writable ──
+RUN mkdir -p \
+        bootstrap/cache \
+        storage/framework/{cache,sessions,views} \
+        storage/logs \
+    && chmod -R 775 storage bootstrap/cache
 
+# ── PHP dependency
 RUN composer install --no-dev --optimize-autoloader
 
-# Opsional: jika kamu butuh asset
-RUN npm install && npm run prod || echo "no frontend build"
+# ── Salin hasil build asset ke image produksi
+COPY --from=build /var/www/public/js ./public/js
+COPY --from=build /var/www/public/css ./public/css
 
-# Permissions Laravel
-RUN chmod -R 775 storage bootstrap/cache
-
-# Cache config, route, dan view
-RUN php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache
-
-EXPOSE 9000
-CMD ["php-fpm"]
+# ── (optional) clear+cache config setiap start agar APP_KEY ter-load
+CMD php artisan config:clear && \
+    php artisan serve --host=0.0.0.0 --port=8000
+EXPOSE 8000
