@@ -3,20 +3,21 @@ FROM node:18 as build
 
 WORKDIR /var/www
 
-# Install node_modules terlebih dahulu untuk caching
-COPY package.json package-lock.json ./
+# Copy aplikasi (termasuk konfigurasi)
+COPY . .
+
+# Install dependencies
 RUN npm install --unsafe-perm
 
 # Update browserslist database
 RUN npx browserslist@latest --update-db
 
-# Copy semua file yang diperlukan
-COPY . .
-
-# Verifikasi struktur file dan build assets
+# Verifikasi struktur file
 RUN echo "Struktur project:" && ls -la && \
-    echo "\nIsi resources:" && ls -la resources/ && \
-    npm run prod
+    echo "\nIsi resources:" && ls -la resources/
+
+# Build assets untuk production
+RUN npm run prod
 
 # Stage 2: Aplikasi PHP
 FROM php:8.1-fpm
@@ -38,6 +39,7 @@ COPY . .
 # Copy hasil build assets dari stage pertama
 COPY --from=build /var/www/public/js /var/www/public/js
 COPY --from=build /var/www/public/css /var/www/public/css
+COPY --from=build /var/www/public/mix-manifest.json /var/www/public/mix-manifest.json
 
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
