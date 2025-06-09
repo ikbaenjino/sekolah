@@ -13,7 +13,7 @@ RUN npm install --unsafe-perm
 RUN npx browserslist@latest --update-db
 
 # Build assets (ganti sesuai kebutuhan: prod, build, dll)
-RUN npm run prod || npm run build
+RUN npm run prod
 
 # Pastikan folder public/css ada (hindari error COPY)
 RUN mkdir -p /var/www/public/css
