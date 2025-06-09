@@ -1,4 +1,4 @@
-type: blueprint
+type: 
 services:
   - type: web
     name: sekolah
