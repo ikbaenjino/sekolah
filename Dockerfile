@@ -3,54 +3,55 @@ FROM node:18 as build
 
 WORKDIR /var/www
 
-# Copy aplikasi (termasuk konfigurasi)
+# Copy seluruh project (termasuk konfigurasi dan source)
 COPY . .
 
-# Install dependencies
+# Install dependencies node
 RUN npm install --unsafe-perm
 
-# Update browserslist database
+# Update database browserslist
 RUN npx browserslist@latest --update-db
 
-# Verifikasi struktur file
-RUN echo "Struktur project:" && ls -la && \
-    echo "\nIsi resources:" && ls -la resources/
+# Build assets (ganti sesuai kebutuhan: prod, build, dll)
+RUN npm run prod || npm run build
 
-# Build assets untuk production
-RUN npm run prod
+# Pastikan folder public/css ada (hindari error COPY)
+RUN mkdir -p /var/www/public/css
 
-# Stage 2: Aplikasi PHP
+# Debug struktur build
+RUN echo "Hasil build:" && ls -la public
+
+# Stage 2: PHP-FPM
 FROM php:8.1-fpm
 
-# Install dependencies system
+# Install dependencies sistem
 RUN apt-get update && apt-get install -y \
     unzip curl git zip libzip-dev libonig-dev libxml2-dev \
     libpng-dev libjpeg-dev libfreetype6-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd pdo_mysql mbstring zip exif pcntl
 
+# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-# Copy aplikasi
+# Copy aplikasi PHP ke container
 COPY . .
 
-# Copy hasil build assets dari stage pertama
-COPY --from=build /var/www/public/js /var/www/public/js
-COPY --from=build /var/www/public/css /var/www/public/css
-COPY --from=build /var/www/public/mix-manifest.json /var/www/public/mix-manifest.json
+# Copy seluruh hasil build dari stage Node
+COPY --from=build /var/www/public /var/www/public
 
-# Install PHP dependencies
+# Install dependensi PHP (tanpa dev)
 RUN composer install --no-dev --optimize-autoloader
 
-# Setup permissions
+# Permissions Laravel
 RUN chmod -R 775 storage bootstrap/cache
 
-# Environment setup untuk production
+# Cache config, route, dan view
 RUN php artisan config:cache && \
-    php artisan view:cache && \
-    php artisan route:cache
+    php artisan route:cache && \
+    php artisan view:cache
 
 EXPOSE 9000
 CMD ["php-fpm"]
