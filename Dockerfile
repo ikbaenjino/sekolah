@@ -11,12 +11,11 @@ RUN npm install --unsafe-perm
 RUN npx browserslist@latest --update-db
 
 # Copy semua file yang diperlukan
-COPY resources/js/ resources/js/
-COPY resources/css/ resources/css/  # Untuk CSS biasa
-COPY webpack.mix.js ./
+COPY . .
 
-# Verifikasi struktur file
-RUN ls -la resources/ && \
+# Verifikasi struktur file dan build assets
+RUN echo "Struktur project:" && ls -la && \
+    echo "\nIsi resources:" && ls -la resources/ && \
     npm run prod
 
 # Stage 2: Aplikasi PHP
