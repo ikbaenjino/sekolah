@@ -1,54 +1,48 @@
-# --------------------------------------------
-# STAGE 1: Build Frontend Assets (optional)
-# --------------------------------------------
+# -----------------------------
+# STAGE 1 : Build frontend (optional)
+# -----------------------------
 FROM node:18 AS node_modules
-
 WORKDIR /var/www
 
-# Copy only frontend files first
+# Jika belum ada package.json, lewati blok ini
 COPY package.json package-lock.json* webpack.mix.js ./
 COPY resources/ resources/
+RUN npm install --no-audit --silent && npm run prod
 
-# Install and build assets
-RUN npm install && npm run prod
-
-# --------------------------------------------
-# STAGE 2: Laravel Production Image
-# --------------------------------------------
+# -----------------------------
+# STAGE 2 : Laravel runtime
+# -----------------------------
 FROM php:8.1-cli
 
-# Install system dependencies
+# ======  PHP & system deps  ======
 RUN apt-get update && apt-get install -y \
-    git unzip zip libzip-dev \
-    libpng-dev libjpeg-dev libfreetype6-dev \
-    libonig-dev libxml2-dev \
-    curl \
-    && docker-php-ext-install pdo_mysql zip gd
+        git unzip zip  \
+        libzip-dev libpq-dev \
+        libpng-dev libjpeg-dev libfreetype6-dev \
+        libonig-dev libxml2-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo_pgsql pgsql zip gd \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install Composer
+# ======  Composer  ======
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
+# ======  App files  ======
 WORKDIR /var/www
-
-# Copy Laravel app
 COPY . .
-
-# Copy built frontend assets from previous stage
+# Assets hasil build
 COPY --from=node_modules /var/www/public /var/www/public
 
-# Set permissions for Laravel
-RUN mkdir -p \
-    storage/framework/{cache,data,sessions,views} \
-    storage/logs bootstrap/cache \
+# ======  Permissions  ======
+RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
  && chown -R www-data:www-data storage bootstrap/cache \
  && chmod -R 775 storage bootstrap/cache
 
-# Install PHP dependencies
+# ======  PHP deps  ======
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Clear config cache to allow fresh APP_KEY on runtime
-CMD php artisan config:clear && \
-    php artisan serve --host=0.0.0.0 --port=8000
-
-EXPOSE 8000
+# ======  Entrypoint  ======
+EXPOSE 10000
+CMD php artisan config:clear \
+ && php artisan migrate --force || true \
+ && php artisan serve --host=0.0.0.0 --port=10000
