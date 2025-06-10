@@ -2,8 +2,10 @@
 node_modules
 .env
 .dockerignore
-Dockerfile
 docker-compose.yml
-public/js
-public/css
-public/mix-manifest.json
+Dockerfile
+/public/storage
+/public/js
+/public/css
+/public/mix-manifest.json
+storage/*.key
