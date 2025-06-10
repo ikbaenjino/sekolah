@@ -1,30 +1,11 @@
 services:
   - type: web
     name: sekolah
-    runtime: docker
-    plan: free
-    repo: https://github.com/ikbaenjino/sekolah
-    branch: main
-    dockerfilePath: ./Dockerfile
+    runtime: php
     envVars:
-      - key: APP_ENV
-        value: production
-      - key: APP_KEY
-        value: base64:y4U+8a43BplAjNmRx0lFv7XNgjTBBLCUs4e8GDz/MkI=
-      - key: APP_DEBUG
-        value: false
-      - key: DB_CONNECTION
-        value: pgsql
-      - key: DB_HOST
-        value: dpg-d133h9h5pdvs73da7t9g-a
-      - key: DB_PORT
-        value: 5432
-      - key: DB_DATABASE
-        value: laravel_app_3x13
-      - key: DB_USERNAME
-        value: laravel_app_3x13_user
-      - key: DB_PASSWORD
-        value: gmrKV1Kzb3eeKt1uZhu16KnigPG4Psji
-
-
-  
+      - key: DATABASE_URL
+        value: ${DATABASE_URL}           # atur di dashboard Render
+    buildCommand: |
+      composer install --no-dev --optimize-autoloader
+      php artisan config:cache
+    startCommand: php artisan serve --host=0.0.0.0 --port=$PORT
